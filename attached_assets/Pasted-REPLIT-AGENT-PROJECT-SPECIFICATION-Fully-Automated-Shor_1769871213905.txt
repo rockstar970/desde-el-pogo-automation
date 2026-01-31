@@ -1,0 +1,247 @@
+REPLIT AGENT — PROJECT SPECIFICATION
+Fully Automated Short-Form Video System
+Brand: Desde el Pogo
+1. PROJECT GOAL
+
+Build a fully automated system that generates, edits, validates, and publishes short-form vertical videos (YouTube Shorts / Instagram Reels / TikTok) focused on concert culture, regardless of music genre.
+
+The system must run end-to-end with no daily human intervention and strictly comply with copyright rules.
+
+2. CORE CONCEPT
+
+Desde el Pogo represents the live concert experience, not specific music or artists.
+
+Content must focus on:
+
+The crowd
+
+The body
+
+The ritual of live shows
+
+Before / during / after a concert
+
+Shared collective experience
+
+The system must never reference specific artists, bands, genres, or songs.
+
+3. CRITICAL LEGAL RESTRICTIONS (MANDATORY)
+
+The system MUST NOT:
+
+Use commercial or copyrighted music
+
+Use known songs or audio clips
+
+Use real concert footage from identifiable shows
+
+Mention band names, artist names, song titles, or genres
+
+Use song lyrics
+
+Use TikTok viral audio
+
+Display band logos or trademarks
+
+Any content violating these rules must be automatically rejected and regenerated.
+
+4. SYSTEM ARCHITECTURE (AGENT-BASED)
+
+Implement an agent-based or modular architecture.
+
+Agent 1 — Text Generation Agent
+
+Purpose: Generate original text content.
+
+Requirements:
+
+Use OpenAI API
+
+Output: 1 short sentence
+
+Max length: 12 words
+
+Language: Spanish (neutral Argentine tone)
+
+Style: Raw, human, universal
+
+No emojis, no hashtags
+
+Prompt:
+
+Write a short, intense, and realistic sentence about the experience of attending a live concert.
+Do not mention artists, bands, music genres, or songs.
+Maximum 12 words.
+Tone: raw, human, universal.
+Language: Spanish (neutral Argentine).
+
+Agent 2 — Visual Curation Agent
+
+Purpose: Select legally reusable stock video.
+
+Requirements:
+
+Use Pexels API and/or Pixabay API
+
+Select videos representing:
+
+Generic crowds
+
+Stage lights
+
+Silhouettes
+
+Abstract motion
+
+Avoid visible branding, logos, or identifiable performers
+
+Output:
+
+Downloaded stock video
+
+Source metadata
+
+Agent 3 — Video Editing Agent
+
+Purpose: Produce final short-form video.
+
+Requirements:
+
+Use FFmpeg
+
+Output format: 9:16 vertical
+
+Duration: 15–30 seconds
+
+Large centered text overlay
+
+Minimal animation (fade in / fade out)
+
+Insert small static logo: Desde el Pogo
+
+Visual style: preferably black & white
+
+Audio:
+
+Royalty-free instrumental music OR
+
+No audio (silence)
+
+Output:
+
+Final .mp4 video ready for Shorts
+
+Agent 4 — Compliance & Safety Agent (MANDATORY)
+
+Purpose: Ensure legal compliance.
+
+Checks required:
+
+Text does not include artist/band/song names
+
+No lyrics detected
+
+Audio source is royalty-free
+
+Video source is stock-only
+
+No trademarks or logos detected
+
+Behavior:
+
+If any check fails → reject output
+
+Trigger full regeneration
+
+Agent 5 — Publishing Agent
+
+Purpose: Publish content automatically.
+
+Platforms:
+
+YouTube Shorts (required)
+
+TikTok (optional)
+
+Instagram Reels (optional, if API access allows)
+
+Publishing rules:
+
+Title = generated sentence
+
+Minimal description
+
+Generic hashtags only: #concert #pogo #shorts
+
+Support scheduled posting
+
+5. AUTOMATION PIPELINE
+Text Generation
+↓
+Emotion-to-visual keyword mapping
+↓
+Stock video download
+↓
+Automatic video rendering (text + branding)
+↓
+Legal compliance validation
+↓
+Automated publishing
+
+6. PUBLISHING FREQUENCY
+
+2–4 videos per day
+
+Daily automated execution
+
+Fixed or configurable schedule
+
+7. TECH STACK (RECOMMENDED)
+
+Language: Python or Node.js
+
+OpenAI API
+
+Pexels / Pixabay API
+
+FFmpeg
+
+YouTube Data API v3
+
+Environment variables for API keys
+
+Execution logs and error handling
+
+8. EXPECTED OUTPUTS
+
+.mp4 vertical videos
+
+Automatically published Shorts
+
+Execution logs
+
+Easily scalable to multiple accounts
+
+9. SUCCESS CRITERIA
+
+Fully autonomous daily operation
+
+Zero copyright claims or strikes
+
+Consistent brand identity (Desde el Pogo)
+
+Stable, maintainable, scalable system
+
+10. FINAL NOTE
+
+This project prioritizes:
+
+Legal safety
+
+Stability
+
+Long-term scalability
+
+Cultural identity over short-term growth hacks
+
+This is intended to operate as a sustainable automated media system, not a trend exploit.
