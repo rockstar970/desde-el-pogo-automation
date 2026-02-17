@@ -2,7 +2,9 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Music2, PlayCircle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 
+export default function Landing() {
   const { user } = useAuth();
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -53,12 +55,12 @@ import { motion } from "framer-motion";
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="/api/login">
+              <Link href={user ? "/dashboard" : "/api/login"}>
                 <Button size="lg" className="h-14 px-8 text-lg bg-white text-black hover:bg-gray-200 rounded-full font-semibold shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105">
                   Launch Console
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </a>
+              </Link>
               <Button size="lg" variant="ghost" className="h-14 px-8 text-lg rounded-full hover:bg-white/5 text-muted-foreground hover:text-white">
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Watch Demo
