@@ -32,6 +32,18 @@ export async function registerRoutes(
     res.json(video);
   });
 
+  // Daily Generation
+  app.post("/api/video/daily", async (req, res) => {
+    try {
+      runGenerationPipeline().catch(err => {
+        console.error("Daily pipeline failed:", err);
+      });
+      res.json({ success: true, message: "Daily generation started" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to start daily generation" });
+    }
+  });
+
   // Trigger Generation (Create Video)
   app.post(api.videos.create.path, async (req, res) => {
     try {

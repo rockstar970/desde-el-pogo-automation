@@ -23,6 +23,13 @@ export const api = {
         200: z.array(z.custom<typeof videos.$inferSelect>()),
       },
     },
+    daily: {
+      method: 'POST' as const,
+      path: '/api/video/daily',
+      responses: {
+        200: z.object({ success: z.boolean(), message: z.string() }),
+      },
+    },
     get: {
       method: 'GET' as const,
       path: '/api/videos/:id',

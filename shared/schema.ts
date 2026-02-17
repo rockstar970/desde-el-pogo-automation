@@ -68,3 +68,8 @@ export type StatsResponse = {
   pendingVideos: number;
   lastRun: string | null;
 };
+
+export const dailyVideoSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});

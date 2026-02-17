@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Music2, PlayCircle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function Landing() {
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <nav className="border-b border-white/5 p-6 backdrop-blur-sm fixed top-0 w-full z-50">
@@ -14,11 +14,11 @@ export default function Landing() {
             </div>
             <h1 className="font-display font-bold text-xl">Desde el Pogo</h1>
           </div>
-          <a href="/api/login">
+          <Link href={user ? "/dashboard" : "/api/login"}>
             <Button variant="outline" className="border-primary/20 hover:bg-primary/10 text-primary">
-              Access Dashboard
+              {user ? "Go to Dashboard" : "Access Dashboard"}
             </Button>
-          </a>
+          </Link>
         </div>
       </nav>
 
