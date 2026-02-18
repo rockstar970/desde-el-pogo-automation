@@ -41,3 +41,8 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_openai_ai_integrations:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+CREATOMATE_API_KEY = "2a137d11e7b449aca4ccaba633f42c747de6b68d7b8c310223b31c4877b4eed90b78fb3aeef5b78ef284b1c5e3925ad0"
