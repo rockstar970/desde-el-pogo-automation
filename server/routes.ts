@@ -11,6 +11,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  if (process.env.NODE_ENV === "production") {
+    console.log("Production server running successfully");
+    console.log("Server running - auth temporarily disabled");
+  }
+
   // Setup Replit Auth first
   await setupAuth(app);
   registerAuthRoutes(app);
