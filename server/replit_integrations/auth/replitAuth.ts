@@ -130,10 +130,12 @@ export async function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
+export const isAuthenticated: RequestHandler = async (_req, _res, next) => {
   // Bypassing authentication for production testing as requested
   return next();
-  /*
+};
+
+const _unused_isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

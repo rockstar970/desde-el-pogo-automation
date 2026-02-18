@@ -98,6 +98,10 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      if (process.env.NODE_ENV === "production") {
+        console.log("Production server running successfully");
+      }
+      console.log("Server running - auth temporarily disabled");
     },
   );
 })();
