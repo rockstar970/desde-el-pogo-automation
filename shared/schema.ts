@@ -16,6 +16,7 @@ export const videos = pgTable("videos", {
   prompt: text("prompt"), // The generated text/sentence
   stockUrl: text("stock_url"), // URL of the stock video
   localVideoPath: text("local_video_path"), // Path to processed video
+  renderId: text("render_id"), // Creatomate render ID
   metadata: jsonb("metadata"), // Store Pexels ID, source info, etc.
   error: text("error"), // Error message if failed
   createdAt: timestamp("created_at").defaultNow(),
