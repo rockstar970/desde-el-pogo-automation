@@ -12,11 +12,13 @@ export * from "./models/chat";
 
 export const videos = pgTable("videos", {
   id: serial("id").primaryKey(),
-  status: text("status").notNull().default("pending"), // pending, generating_text, curating_visuals, editing, compliance_check, publishing, published, failed
+  status: text("status").notNull().default("pending"), // pending, generating_text, curating_visuals, editing, compliance_check, publishing, published, failed, processing, completed
   prompt: text("prompt"), // The generated text/sentence
   stockUrl: text("stock_url"), // URL of the stock video
   localVideoPath: text("local_video_path"), // Path to processed video
   renderId: text("render_id"), // Creatomate render ID
+  tiktokPosted: boolean("tiktok_posted").default(false).notNull(),
+  instagramPosted: boolean("instagram_posted").default(false).notNull(),
   metadata: jsonb("metadata"), // Store Pexels ID, source info, etc.
   error: text("error"), // Error message if failed
   createdAt: timestamp("created_at").defaultNow(),

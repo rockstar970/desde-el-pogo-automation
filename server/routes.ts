@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
-import { runGenerationPipeline } from "./services/agents";
+import { runGenerationPipeline, runDailyGeneration, initCron } from "./services/agents";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -16,9 +16,20 @@ export async function registerRoutes(
     console.log("Server running - auth temporarily disabled");
   }
 
+  // Initialize Cron Job
+  initCron();
+
   // Setup Replit Auth first
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  // Health Check
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString()
+    });
+  });
 
   // === API ROUTES ===
 
@@ -40,7 +51,7 @@ export async function registerRoutes(
   // Daily Generation
   app.post("/api/video/daily", async (req, res) => {
     try {
-      runGenerationPipeline().catch(err => {
+      runDailyGeneration().catch(err => {
         console.error("Daily pipeline failed:", err);
       });
       res.json({ success: true, message: "Daily generation started" });

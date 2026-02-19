@@ -1,9 +1,11 @@
 import { storage } from "../storage";
-import { openai } from "../replit_integrations/audio/client"; // Use configured client
+import { openai } from "../replit_integrations/audio/client";
 import { createVideoWithOverlay } from "./ffmpeg";
 import fs from "fs";
 import path from "path";
 import https from "https";
+import cron from "node-cron";
+import { DateTime } from "luxon";
 
 // --- Agent 1: Text Generation ---
 export async function generateTextAgent(): Promise<string> {
@@ -27,6 +29,7 @@ export async function generateTextAgent(): Promise<string> {
 
     const text = response.choices[0].message.content?.trim() || "La energía del pogo nos une a todos.";
     
+    console.log("Script generated");
     await storage.createLog({
       level: "info",
       message: `Generated text: "${text}"`,
@@ -52,17 +55,6 @@ export async function curationAgent(videoId: number, prompt: string): Promise<st
     agent: "visual_agent",
   });
 
-  // MOCK: Since we don't have Pexels API key in this env yet, we use a placeholder or simulate download
-  // In a real scenario, we would fetch Pexels/Pixabay here.
-  
-  // Simulating a download for the prototype
-  // We'll verify if we have a sample video, otherwise we might fail or use a color solid
-  
-  // For this prototype, let's assume we have a sample.mp4 in attached_assets or we create a dummy one?
-  // Actually, FFmpeg can generate test patterns!
-  
-  const mockVideoUrl = "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3"; // Just audio for now? No needs video.
-  // Use a public domain video placeholder
   const stockVideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"; 
 
   await storage.createLog({
@@ -149,7 +141,7 @@ export async function editingAgent(videoId: number, stockUrl: string, text: stri
   const renderId = data[0].id;
   console.log(`Render requested: ${renderId}`);
   
-  await storage.updateVideo(videoId, { renderId });
+  await storage.updateVideo(videoId, { renderId, status: "processing" });
 
   return renderId;
 }
@@ -157,7 +149,7 @@ export async function editingAgent(videoId: number, stockUrl: string, text: stri
 async function pollRenderStatus(videoId: number, renderId: string): Promise<string> {
   const apiKey = process.env.CREATOMATE_API_KEY;
   let attempts = 0;
-  const maxAttempts = 60; // 5 minutes
+  const maxAttempts = 120; // 10 minutes
 
   while (attempts < maxAttempts) {
     const response = await fetch(`https://api.creatomate.com/v1/renders/${renderId}`, {
@@ -168,8 +160,9 @@ async function pollRenderStatus(videoId: number, renderId: string): Promise<stri
 
     const data = await response.json() as any;
     
-    if (data.status === "succeeded") {
+    if (data.status === "completed" || data.status === "succeeded") {
       console.log(`Render completed: ${data.url}`);
+      await storage.updateVideo(videoId, { status: "completed" });
       return data.url;
     } else if (data.status === "failed") {
       console.log("Render failed");
@@ -191,7 +184,6 @@ export async function complianceAgent(text: string): Promise<boolean> {
     agent: "compliance_agent",
   });
 
-  // Check for forbidden keywords (simplified)
   const forbidden = ["Beatles", "Metallica", "Taylor Swift", "Rock", "Pop", "Jazz"];
   const hasForbidden = forbidden.some(word => text.includes(word));
 
@@ -212,30 +204,11 @@ export async function complianceAgent(text: string): Promise<boolean> {
   return true;
 }
 
-// --- Agent 5: Publishing ---
-export async function publishingAgent(videoId: number, videoPath: string, text: string): Promise<void> {
-  await storage.createLog({
-    level: "info",
-    message: "Publishing video...",
-    agent: "publishing_agent",
-  });
-
-  // Mock publishing
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  await storage.createLog({
-    level: "info",
-    message: `Video ${videoId} published successfully to YouTube Shorts (Mock).`,
-    agent: "publishing_agent",
-  });
-}
-
 // --- Orchestrator ---
 export async function runGenerationPipeline(existingVideoId?: number, forcePrompt?: string) {
   let videoId: number = existingVideoId || 0;
 
   try {
-    // 1. Create Video Record if not provided
     if (!videoId) {
       const video = await storage.createVideo({
         status: "generating_text",
@@ -246,30 +219,25 @@ export async function runGenerationPipeline(existingVideoId?: number, forcePromp
       await storage.updateVideo(videoId, { status: "generating_text" });
     }
 
-    // 2. Text Generation
     let text = forcePrompt;
     if (!text) {
       text = await generateTextAgent();
       await storage.updateVideo(videoId, { prompt: text });
     }
 
-    // 3. Compliance Check (Text)
     const isSafe = await complianceAgent(text);
     if (!isSafe) {
       await storage.updateVideo(videoId, { status: "compliance_failed", error: "Text violated compliance rules" });
       return;
     }
 
-    // 4. Visual Curation
     await storage.updateVideo(videoId, { status: "curating_visuals" });
     const stockUrl = await curationAgent(videoId, text);
     await storage.updateVideo(videoId, { stockUrl });
 
-    // 5. Editing
     await storage.updateVideo(videoId, { status: "editing" });
     const renderId = await editingAgent(videoId, stockUrl, text);
     
-    // 6. Polling for completion
     const finalVideoUrl = await pollRenderStatus(videoId, renderId);
     await storage.updateVideo(videoId, { localVideoPath: finalVideoUrl, status: "published" });
 
@@ -290,19 +258,30 @@ export async function runGenerationPipeline(existingVideoId?: number, forcePromp
   }
 }
 
-// Helper to download file
-async function downloadFile(url: string, dest: string): Promise<void> {
-  const file = fs.createWriteStream(dest);
-  return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
-      response.pipe(file);
-      file.on('finish', () => {
-        file.close();
-        resolve();
-      });
-    }).on('error', (err) => {
-      fs.unlink(dest, () => {});
-      reject(err);
-    });
+export async function runDailyGeneration() {
+  const now = DateTime.now().setZone("America/Argentina/Buenos_Aires");
+  console.log(`Daily generation started at ${now.toString()}`);
+  
+  const todayVideos = await (storage as any).getVideosCreatedToday();
+  if (todayVideos.length >= 3) {
+    console.log("Daily videos already generated for today.");
+    return;
+  }
+
+  const countToGenerate = 3 - todayVideos.length;
+  for (let i = 0; i < countToGenerate; i++) {
+    await runGenerationPipeline();
+  }
+  
+  console.log("Daily generation finished");
+}
+
+export function initCron() {
+  // Run daily at 9:00 AM Argentina time
+  cron.schedule("0 9 * * *", () => {
+    runDailyGeneration();
+  }, {
+    timezone: "America/Argentina/Buenos_Aires"
   });
+  console.log("Cron initialized for America/Argentina/Buenos_Aires (9:00 AM daily)");
 }

@@ -54,7 +54,13 @@ export class DatabaseStorage implements IStorage {
 
   // Video Methods
   async getVideos(): Promise<Video[]> {
-    return await db.select().from(videos).orderBy(desc(videos.createdAt)).limit(20);
+    return await db.select().from(videos).orderBy(desc(videos.createdAt)).limit(50);
+  }
+
+  async getVideosCreatedToday(): Promise<Video[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return await db.select().from(videos).where(sql`${videos.createdAt} >= ${today}`);
   }
 
   async getVideo(id: number): Promise<Video | undefined> {
