@@ -80,47 +80,54 @@ export async function editingAgent(videoId: number, stockUrl: string, text: stri
   }
 
   const requestBody = {
+    output_format: "mp4",
+    width: 1080,
+    height: 1920,
+    frame_rate: 30,
     source: {
-      width: 720,
-      height: 1280,
+      width: 1080,
+      height: 1920,
       elements: [
         {
           type: "video",
           source: stockUrl,
           duration: 15,
+          fit: "cover",
         },
         {
           type: "text",
           text: text,
           font_family: "Inter",
           font_weight: "700",
-          font_size: "48px",
+          font_size: "64px",
           fill_color: "#ffffff",
-          background_color: "rgba(0,0,0,0.5)",
-          padding: "20px",
+          background_color: "rgba(0,0,0,0.6)",
+          padding: "40px",
           x: "50%",
           y: "50%",
           x_alignment: "50%",
           y_alignment: "50%",
-          width: "80%",
+          width: "90%",
         },
         {
           type: "text",
           text: "Desde el Pogo",
           font_family: "Inter",
-          font_weight: "400",
-          font_size: "24px",
+          font_weight: "500",
+          font_size: "32px",
           fill_color: "#ffffff",
           x: "50%",
-          y: "90%",
+          y: "92%",
           x_alignment: "50%",
           y_alignment: "50%",
+          shadow_color: "rgba(0,0,0,0.8)",
+          shadow_blur: "10px",
         }
       ],
     }
   };
 
-  console.log("Creatomate Request:", JSON.stringify(requestBody, null, 2));
+  console.log("Creatomate Request Payload:", JSON.stringify(requestBody, null, 2));
 
   const response = await fetch("https://api.creatomate.com/v1/renders", {
     method: "POST",
@@ -132,7 +139,18 @@ export async function editingAgent(videoId: number, stockUrl: string, text: stri
   });
 
   const data = await response.json() as any;
-  console.log("Creatomate Response:", JSON.stringify(data, null, 2));
+  
+  if (Array.isArray(data) && data.length > 0) {
+    const render = data[0];
+    console.log("Creatomate Response Details:", {
+      id: render.id,
+      status: render.status,
+      url: render.url,
+      format: render.output_format || "mp4"
+    });
+  } else {
+    console.log("Creatomate Response Payload:", JSON.stringify(data, null, 2));
+  }
 
   if (!response.ok) {
     throw new Error(`Creatomate API error: ${data.message || response.statusText}`);
