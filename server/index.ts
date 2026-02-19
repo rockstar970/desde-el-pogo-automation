@@ -111,6 +111,10 @@ app.use((req, res, next) => {
         console.log("Environment ready");
       }
       
+      // Verification of specific keys for user
+      if (!process.env.CREATOMATE_API_KEY) console.warn("WARNING: CREATOMATE_API_KEY is not defined");
+      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) console.warn("WARNING: AI_INTEGRATIONS_OPENAI_API_KEY is not defined");
+      
       console.log("Server running - auth temporarily disabled");
     },
   );

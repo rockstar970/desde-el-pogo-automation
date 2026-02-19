@@ -7,6 +7,10 @@ export function registerAuthRoutes(app: Express): void {
   // Get current authenticated user
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
+      // In bypass mode, req.user might be undefined
+      if (!req.user || !req.user.claims) {
+        return res.json({ id: "anonymous", username: "Anonymous", guest: true });
+      }
       const userId = req.user.claims.sub;
       const user = await authStorage.getUser(userId);
       res.json(user);
