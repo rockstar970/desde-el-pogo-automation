@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { videos, logs, type Video, type InsertVideo, type Log, type InsertLog } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { users, type User, type UpsertUser } from "@shared/models/auth";
 
 // Import Auth Storage Interface

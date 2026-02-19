@@ -98,9 +98,19 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      
+      // Environment and Database status logs
+      console.log("CREATOMATE_API_KEY status:", process.env.CREATOMATE_API_KEY ? "Defined" : "Undefined");
+      console.log("AI_INTEGRATIONS_OPENAI_API_KEY status:", process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "Defined" : "Undefined");
+      
       if (process.env.NODE_ENV === "production") {
         console.log("Production server running successfully");
+        console.log("Production environment ready");
+      } else {
+        console.log("Development server running");
+        console.log("Environment ready");
       }
+      
       console.log("Server running - auth temporarily disabled");
     },
   );

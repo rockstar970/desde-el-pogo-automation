@@ -10,7 +10,8 @@ import {
   Clock, 
   PlayCircle,
   Film,
-  Calendar
+  Calendar,
+  Activity
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -21,8 +22,12 @@ export default function Videos() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published': return "bg-green-500/10 text-green-500 border-green-500/20";
-      case 'failed': return "bg-red-500/10 text-red-500 border-red-500/20";
-      case 'pending': return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+      case 'failed': 
+      case 'compliance_failed': return "bg-red-500/10 text-red-500 border-red-500/20";
+      case 'processing':
+      case 'editing':
+      case 'curating_visuals':
+      case 'generating_text': return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
       default: return "bg-primary/10 text-primary border-primary/20";
     }
   };
@@ -30,7 +35,10 @@ export default function Videos() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'published': return <CheckCircle2 className="w-3 h-3 mr-1" />;
-      case 'failed': return <AlertCircle className="w-3 h-3 mr-1" />;
+      case 'failed':
+      case 'compliance_failed': return <AlertCircle className="w-3 h-3 mr-1" />;
+      case 'processing':
+      case 'editing': return <Activity className="w-3 h-3 mr-1 animate-spin" />;
       default: return <Clock className="w-3 h-3 mr-1" />;
     }
   };
@@ -83,7 +91,13 @@ export default function Videos() {
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground mt-1">
+                      <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                        ID: {video.id} {video.renderId ? `| Render: ${video.renderId}` : ""}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground mt-2">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5" />
                         {video.createdAt && format(new Date(video.createdAt), "MMM d, yyyy HH:mm")}

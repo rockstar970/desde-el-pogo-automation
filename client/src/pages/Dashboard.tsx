@@ -122,13 +122,16 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2">
                         <Badge variant={
                           video.status === 'published' ? 'default' : 
-                          video.status === 'failed' ? 'destructive' : 
+                          video.status === 'failed' || video.status === 'compliance_failed' ? 'destructive' : 
+                          video.status === 'processing' || video.status === 'editing' ? 'secondary' :
                           'outline'
-                        } className="text-[10px] uppercase">
+                        } className={`text-[10px] uppercase ${
+                          video.status === 'published' ? 'bg-green-500 hover:bg-green-600' : ''
+                        }`}>
                           {video.status}
                         </Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          {video.createdAt && format(new Date(video.createdAt), "MMM d, HH:mm")}
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          ID: {video.id} {video.renderId ? `| Render: ${video.renderId.slice(0, 8)}...` : ""}
                         </span>
                       </div>
                     </div>
