@@ -90,32 +90,36 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-      
-      // Environment and Database status logs
-      console.log("CREATOMATE_API_KEY status:", process.env.CREATOMATE_API_KEY ? "Defined" : "Undefined");
-      console.log("AI_INTEGRATIONS_OPENAI_API_KEY status:", process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "Defined" : "Undefined");
-      
-      if (process.env.NODE_ENV === "production") {
-        console.log("Production server running successfully");
-        console.log("Production environment ready");
-      } else {
-        console.log("Development server running");
-        console.log("Environment ready");
-      }
-      
-      // Verification of specific keys for user
-      if (!process.env.CREATOMATE_API_KEY) console.warn("WARNING: CREATOMATE_API_KEY is not defined");
-      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) console.warn("WARNING: AI_INTEGRATIONS_OPENAI_API_KEY is not defined");
-      
-      console.log("Server running - auth temporarily disabled");
-    },
-  );
+  
+  if (!(global as any)._serverStarted) {
+    httpServer.listen(
+      {
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      },
+      () => {
+        log(`serving on port ${port}`);
+        
+        // Environment and Database status logs
+        console.log("CREATOMATE_API_KEY status:", process.env.CREATOMATE_API_KEY ? "Defined" : "Undefined");
+        console.log("AI_INTEGRATIONS_OPENAI_API_KEY status:", process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "Defined" : "Undefined");
+        
+        if (process.env.NODE_ENV === "production") {
+          console.log("Production server running successfully");
+          console.log("Production environment ready");
+        } else {
+          console.log("Development server running");
+          console.log("Environment ready");
+        }
+        
+        // Verification of specific keys for user
+        if (!process.env.CREATOMATE_API_KEY) console.warn("WARNING: CREATOMATE_API_KEY is not defined");
+        if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) console.warn("WARNING: AI_INTEGRATIONS_OPENAI_API_KEY is not defined");
+        
+        console.log("Server running - auth temporarily disabled");
+      },
+    );
+    (global as any)._serverStarted = true;
+  }
 })();
