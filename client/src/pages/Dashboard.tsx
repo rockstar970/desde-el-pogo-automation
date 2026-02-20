@@ -32,16 +32,20 @@ export default function Dashboard() {
 
   const dailyMutation = useMutation({
     mutationFn: async () => {
+      console.log("Triggering daily generation...");
       const res = await apiRequest("POST", "/api/video/daily");
-      return res.json();
+      const data = await res.json();
+      console.log("Daily generation response:", data);
+      return data;
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Daily generation started" });
+      toast({ title: "Success", description: "Daily generation started successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      console.error("Daily generation trigger failed:", err);
+      toast({ title: "Error", description: `Trigger failed: ${err.message}`, variant: "destructive" });
     }
   });
 
