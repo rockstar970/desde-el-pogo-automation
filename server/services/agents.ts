@@ -8,39 +8,63 @@ import cron from "node-cron";
 import { DateTime } from "luxon";
 
 // --- Agent 1: Text Generation ---
-export async function generateTextAgent(): Promise<string> {
+export async function generateTextAgent(type: "efemeride" | "curiosidad" | "tema_del_dia"): Promise<{ title: string; script: string }> {
   await storage.createLog({
     level: "info",
-    message: "Generating text...",
+    message: `Generating text for video type: ${type}...`,
     agent: "text_agent",
   });
 
+  const prompts = {
+    efemeride: "Escribe una efeméride musical del rock argentino para hoy. Debe ser un dato histórico real.",
+    curiosidad: "Escribe un dato curioso o poco conocido sobre la historia del rock argentino.",
+    tema_del_dia: "Elige una canción emblemática del rock argentino y explica brevemente por qué es importante hoy."
+  };
+
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are a text generation agent for 'Desde el Pogo'. Write a short, intense, and realistic sentence about the experience of attending a live concert. Do not mention artists, bands, music genres, or songs. Maximum 12 words. Tone: raw, human, universal. Language: Spanish (neutral Argentine). Output ONLY the sentence."
+          content: `Eres un experto en cultura de rock argentino para 'Desde el Pogo'.
+Genera contenido para un video vertical de 15-25 segundos.
+REGLAS CRÍTICAS:
+1. No menciones marcas comerciales ni uses material protegido por copyright de forma que infrinja reglas (solo uso informativo/educativo).
+2. Estilo: Gancho inicial impactante (hook), desarrollo conciso, sin marcas de tiempo ni etiquetas de escena.
+3. El texto debe ser LIMPIO: solo la narrativa para ser leída.
+4. Cierre obligatorio: "Seguinos para más historia del rock argentino - Desde el Pogo".
+5. Formato de salida: JSON con campos 'title' (máximo 8 palabras) y 'script' (narrativa completa).
+6. Idioma: Español neutro de Argentina (voseo si es natural).`
+        },
+        {
+          role: "user",
+          content: prompts[type]
         }
       ],
-      temperature: 0.7,
+      response_format: { type: "json_object" },
+      temperature: 0.8,
     });
 
-    const text = response.choices[0].message.content?.trim() || "La energía del pogo nos une a todos.";
+    const content = JSON.parse(response.choices[0].message.content || "{}");
+    const title = content.title || "Rock Argentino";
+    const script = content.script || "La historia del rock nos une.";
     
-    console.log("Script generated");
+    console.log(`Video Type: ${type}`);
+    console.log(`Generated Title: ${title}`);
+    console.log(`Generated Script: ${script}`);
+
     await storage.createLog({
       level: "info",
-      message: `Generated text: "${text}"`,
+      message: `Generated type: ${type} | Title: ${title}`,
       agent: "text_agent",
     });
 
-    return text;
+    return { title, script };
   } catch (error: any) {
     await storage.createLog({
       level: "error",
-      message: `Text generation failed: ${error.message}`,
+      message: `Text generation failed for ${type}: ${error.message}`,
       agent: "text_agent",
     });
     throw error;
@@ -67,7 +91,7 @@ export async function curationAgent(videoId: number, prompt: string): Promise<st
 }
 
 // --- Agent 3: Video Editing ---
-export async function editingAgent(videoId: number, stockUrl: string, text: string): Promise<string> {
+export async function editingAgent(videoId: number, stockUrl: string, title: string, script: string): Promise<string> {
   await storage.createLog({
     level: "info",
     message: "Requesting Creatomate render...",
@@ -96,18 +120,34 @@ export async function editingAgent(videoId: number, stockUrl: string, text: stri
         },
         {
           type: "text",
-          text: text,
+          text: title,
           font_family: "Inter",
-          font_weight: "700",
-          font_size: "64px",
+          font_weight: "900",
+          font_size: "80px",
           fill_color: "#ffffff",
-          background_color: "rgba(0,0,0,0.6)",
-          padding: "40px",
+          background_color: "#ff0000",
+          padding: "20px 40px",
           x: "50%",
-          y: "50%",
+          y: "20%",
           x_alignment: "50%",
           y_alignment: "50%",
           width: "90%",
+          text_transform: "uppercase",
+        },
+        {
+          type: "text",
+          text: script,
+          font_family: "Inter",
+          font_weight: "700",
+          font_size: "48px",
+          fill_color: "#ffffff",
+          background_color: "rgba(0,0,0,0.7)",
+          padding: "40px",
+          x: "50%",
+          y: "55%",
+          x_alignment: "50%",
+          y_alignment: "50%",
+          width: "85%",
         },
         {
           type: "text",
@@ -223,7 +263,7 @@ export async function complianceAgent(text: string): Promise<boolean> {
 }
 
 // --- Orchestrator ---
-export async function runGenerationPipeline(existingVideoId?: number, forcePrompt?: string) {
+export async function runGenerationPipeline(existingVideoId?: number, forcePrompt?: string, videoType: "efemeride" | "curiosidad" | "tema_del_dia" = "curiosidad") {
   let videoId: number = existingVideoId || 0;
 
   try {
@@ -237,24 +277,28 @@ export async function runGenerationPipeline(existingVideoId?: number, forcePromp
       await storage.updateVideo(videoId, { status: "generating_text" });
     }
 
-    let text = forcePrompt;
-    if (!text) {
-      text = await generateTextAgent();
-      await storage.updateVideo(videoId, { prompt: text });
+    let title = "Rock Argentino";
+    let script = forcePrompt;
+    
+    if (!script) {
+      const generated = await generateTextAgent(videoType);
+      title = generated.title;
+      script = generated.script;
+      await storage.updateVideo(videoId, { prompt: script });
     }
 
-    const isSafe = await complianceAgent(text);
+    const isSafe = await complianceAgent(script);
     if (!isSafe) {
       await storage.updateVideo(videoId, { status: "compliance_failed", error: "Text violated compliance rules" });
       return;
     }
 
     await storage.updateVideo(videoId, { status: "curating_visuals" });
-    const stockUrl = await curationAgent(videoId, text);
+    const stockUrl = await curationAgent(videoId, script);
     await storage.updateVideo(videoId, { stockUrl });
 
     await storage.updateVideo(videoId, { status: "editing" });
-    const renderId = await editingAgent(videoId, stockUrl, text);
+    const renderId = await editingAgent(videoId, stockUrl, title, script);
     
     const finalVideoUrl = await pollRenderStatus(videoId, renderId);
     await storage.updateVideo(videoId, { localVideoPath: finalVideoUrl, status: "published" });
@@ -286,9 +330,11 @@ export async function runDailyGeneration() {
     return;
   }
 
-  const countToGenerate = 3 - todayVideos.length;
-  for (let i = 0; i < countToGenerate; i++) {
-    await runGenerationPipeline();
+  const types: ("efemeride" | "curiosidad" | "tema_del_dia")[] = ["efemeride", "curiosidad", "tema_del_dia"];
+  const startIdx = todayVideos.length;
+  
+  for (let i = startIdx; i < 3; i++) {
+    await runGenerationPipeline(undefined, undefined, types[i]);
   }
   
   console.log("Daily generation finished");
