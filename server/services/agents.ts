@@ -324,20 +324,59 @@ export async function runDailyGeneration() {
   const now = DateTime.now().setZone("America/Argentina/Buenos_Aires");
   console.log(`Daily generation started at ${now.toString()}`);
   
-  const todayVideos = await (storage as any).getVideosCreatedToday();
-  if (todayVideos.length >= 3) {
-    console.log("Daily videos already generated for today.");
-    return;
-  }
+  const types: { type: "efemeride" | "curiosidad" | "tema_del_dia"; headline: string; dbType: string }[] = [
+    { type: "efemeride", headline: "Un día como hoy en el rock argentino 🎸", dbType: "ephemeris" },
+    { type: "curiosidad", headline: "¿Sabías esto del rock nacional? 🤘", dbType: "trivia" },
+    { type: "tema_del_dia", headline: "Tema del día 🔥", dbType: "daily_song" }
+  ];
 
-  const types: ("efemeride" | "curiosidad" | "tema_del_dia")[] = ["efemeride", "curiosidad", "tema_del_dia"];
-  const startIdx = todayVideos.length;
-  
-  for (let i = startIdx; i < 3; i++) {
-    await runGenerationPipeline(undefined, undefined, types[i]);
+  let generated = 0;
+  let failed = 0;
+
+  for (const item of types) {
+    try {
+      console.log(`Starting generation for: ${item.dbType}`);
+      // Use the existing pipeline but override the title with the required headline
+      // We pass the type to generateTextAgent and then override the title in editingAgent
+      
+      let videoId: number = 0;
+      const video = await storage.createVideo({
+        status: "generating_text",
+        prompt: null,
+        metadata: { type: item.dbType }
+      });
+      videoId = video.id;
+
+      const generatedContent = await generateTextAgent(item.type);
+      await storage.updateVideo(videoId, { prompt: generatedContent.script });
+
+      const isSafe = await complianceAgent(generatedContent.script);
+      if (!isSafe) {
+        throw new Error("Text violated compliance rules");
+      }
+
+      const stockUrl = await curationAgent(videoId, generatedContent.script);
+      await storage.updateVideo(videoId, { stockUrl });
+
+      const renderId = await editingAgent(videoId, stockUrl, item.headline, generatedContent.script);
+      const finalVideoUrl = await pollRenderStatus(videoId, renderId);
+      
+      await storage.updateVideo(videoId, { 
+        localVideoPath: finalVideoUrl, 
+        status: "published"
+      });
+
+      generated++;
+      console.log(`Successfully generated ${item.dbType}`);
+    } catch (error: any) {
+      console.error(`Failed to generate ${item.dbType}:`, error);
+      failed++;
+      // Continue to next one as per requirements
+    }
   }
   
-  console.log("Daily generation finished");
+  console.log(`Daily generation finished. Generated: ${generated}, Failed: ${failed}`);
+  return { success: true, generated, failed };
 }
 
 export function initCron() {
