@@ -165,7 +165,7 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
         {
           name: "logo_png",
           type: "image",
-          source: "https://i.imgur.com/JkM8VpV.png",
+          source: "https://i.ibb.co/JkM8VpV/logo-desde-el-pogo.png",
           x: "50%",
           y: "92%",
           width: "300px",
@@ -177,7 +177,7 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
     modifications: {
       "headline.text": title,
       "background_video.source": stockUrl,
-      "logo_png.source": "https://i.imgur.com/JkM8VpV.png",
+      "logo_png.source": "https://i.ibb.co/JkM8VpV/logo-desde-el-pogo.png",
       "script_text.text": script
     }
   };
