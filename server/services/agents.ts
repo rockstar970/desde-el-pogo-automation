@@ -79,7 +79,16 @@ export async function curationAgent(videoId: number, prompt: string): Promise<st
     agent: "visual_agent",
   });
 
-  const stockVideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"; 
+  // Diversified high-quality stock video URLs for production
+  const stockVideos = [
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4"
+  ];
+  
+  const stockVideoUrl = stockVideos[Math.floor(Math.random() * stockVideos.length)];
 
   await storage.createLog({
     level: "info",
@@ -103,6 +112,7 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
     throw new Error("CREATOMATE_API_KEY is missing");
   }
 
+  // Define the request body with dynamic elements and explicit modifications
   const requestBody = {
     output_format: "mp4",
     width: 1080,
@@ -113,12 +123,14 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
       height: 1920,
       elements: [
         {
+          name: "background_video",
           type: "video",
           source: stockUrl,
           duration: 15,
           fit: "cover",
         },
         {
+          name: "headline",
           type: "text",
           text: title,
           font_family: "Inter",
@@ -135,6 +147,7 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
           text_transform: "uppercase",
         },
         {
+          name: "script_text",
           type: "text",
           text: script,
           font_family: "Inter",
@@ -150,20 +163,22 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
           width: "85%",
         },
         {
-          type: "text",
-          text: "Desde el Pogo",
-          font_family: "Inter",
-          font_weight: "500",
-          font_size: "32px",
-          fill_color: "#ffffff",
+          name: "logo_png",
+          type: "image",
+          source: "https://desdelpogo.com/logo.png",
           x: "50%",
           y: "92%",
+          width: "300px",
           x_alignment: "50%",
           y_alignment: "50%",
-          shadow_color: "rgba(0,0,0,0.8)",
-          shadow_blur: "10px",
         }
       ],
+    },
+    modifications: {
+      "headline.text": title,
+      "background_video.source": stockUrl,
+      "logo_png.source": "https://desdelpogo.com/logo.png",
+      "script_text.text": script
     }
   };
 
@@ -179,24 +194,16 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
   });
 
   const data = await response.json() as any;
-  
-  if (Array.isArray(data) && data.length > 0) {
-    const render = data[0];
-    console.log("Creatomate Response Details:", {
-      id: render.id,
-      status: render.status,
-      url: render.url,
-      format: render.output_format || "mp4"
-    });
-  } else {
-    console.log("Creatomate Response Payload:", JSON.stringify(data, null, 2));
-  }
+  console.log("Creatomate Response Payload:", JSON.stringify(data, null, 2));
 
   if (!response.ok) {
     throw new Error(`Creatomate API error: ${data.message || response.statusText}`);
   }
 
-  const renderId = data[0].id;
+  // Handle both array and object responses from Creatomate
+  const renderData = Array.isArray(data) ? data[0] : data;
+  const renderId = renderData.id;
+  
   console.log(`Render requested: ${renderId}`);
   
   await storage.updateVideo(videoId, { renderId, status: "processing" });
@@ -223,8 +230,8 @@ async function pollRenderStatus(videoId: number, renderId: string): Promise<stri
       await storage.updateVideo(videoId, { status: "completed" });
       return data.url;
     } else if (data.status === "failed") {
-      console.log("Render failed");
-      throw new Error("Creatomate render failed");
+      console.log(`Render failed: ${data.error_message || "Unknown error"}`);
+      throw new Error(`Creatomate render failed: ${data.error_message || "Unknown error"}`);
     }
 
     attempts++;
@@ -309,6 +316,7 @@ export async function runGenerationPipeline(existingVideoId?: number, forcePromp
       agent: "publishing_agent",
     });
 
+    return { success: true };
   } catch (error: any) {
     console.error("Pipeline failed:", error);
     if (videoId) {
@@ -317,6 +325,7 @@ export async function runGenerationPipeline(existingVideoId?: number, forcePromp
         error: error.message 
       });
     }
+    throw error;
   }
 }
 

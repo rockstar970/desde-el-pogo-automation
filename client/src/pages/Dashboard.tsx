@@ -38,8 +38,11 @@ export default function Dashboard() {
       console.log("Daily generation response:", data);
       return data;
     },
-    onSuccess: () => {
-      toast({ title: "Success", description: "Daily generation started successfully" });
+    onSuccess: (data) => {
+      toast({ 
+        title: "Success", 
+        description: `Daily generation started: ${data.generated} videos queued, ${data.failed} failed.` 
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },

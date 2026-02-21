@@ -52,10 +52,8 @@ export async function registerRoutes(
   app.post("/api/video/daily", async (req, res) => {
     console.log("Daily generation endpoint triggered");
     try {
-      runDailyGeneration().catch(err => {
-        console.error("Daily pipeline failed:", err);
-      });
-      res.json({ success: true, message: "Daily generation started" });
+      const result = await runDailyGeneration();
+      res.json(result);
     } catch (error) {
       console.error("Failed to start daily generation:", error);
       res.status(500).json({ success: false, message: "Failed to start daily generation" });
