@@ -114,11 +114,10 @@ export async function editingAgent(videoId: number, stockUrl: string, title: str
 
   // Define the request body using the published template with only dynamic modifications
   const requestBody = {
-    template_id: "7297e641-4355-46c6-946d-67252f400788", // Assuming this is the current published template ID
+    template_id: "7297e641-4355-46c6-946d-67252f400788",
     modifications: {
       "headline.text": title,
-      "background_video.source": stockUrl,
-      "script_text.text": script
+      "background_video.source": stockUrl
     }
   };
 
