@@ -3,14 +3,17 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
-import { runGenerationPipeline, runDailyGeneration, initCron } from "./services/agents";
+import { setupAuth } from "./replit_integrations/auth";
+import {
+  runGenerationPipeline,
+  runDailyGeneration,
+  initCron,
+} from "./services/agents";
 
 export async function registerRoutes(
   httpServer: Server,
-  app: Express
+  app: Express,
 ): Promise<Server> {
-  
   if (process.env.NODE_ENV === "production") {
     console.log("Production server running successfully");
     console.log("Server running - auth temporarily disabled");
@@ -19,15 +22,16 @@ export async function registerRoutes(
   // Initialize Cron Job
   initCron();
 
-  // Setup Replit Auth first
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  // Setup Replit Auth only in development (Replit)
+  if (process.env.NODE_ENV !== "production") {
+    await setupAuth(app);
+  }
 
   // Health Check
   app.get("/api/health", (req, res) => {
     res.json({
       status: "ok",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -43,7 +47,7 @@ export async function registerRoutes(
   app.get(api.videos.get.path, async (req, res) => {
     const video = await storage.getVideo(Number(req.params.id));
     if (!video) {
-      return res.status(404).json({ message: 'Video not found' });
+      return res.status(404).json({ message: "Video not found" });
     }
     res.json(video);
   });
@@ -56,7 +60,9 @@ export async function registerRoutes(
       res.json(result);
     } catch (error) {
       console.error("Failed to start daily generation:", error);
-      res.status(500).json({ success: false, message: "Failed to start daily generation" });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to start daily generation" });
     }
   });
 
@@ -64,7 +70,7 @@ export async function registerRoutes(
   app.post(api.videos.create.path, async (req, res) => {
     try {
       const input = api.videos.create.input.parse(req.body);
-      
+
       // Create the record immediately
       const video = await storage.createVideo({
         status: "pending",
@@ -72,18 +78,17 @@ export async function registerRoutes(
       });
 
       // Start the pipeline asynchronously with the created video ID
-      runGenerationPipeline(video.id, input.forcePrompt).catch(err => {
+      runGenerationPipeline(video.id, input.forcePrompt).catch((err) => {
         console.error("Pipeline crashed:", err);
         storage.updateVideo(video.id, { status: "failed", error: err.message });
       });
-      
-      res.status(201).json(video);
 
+      res.status(201).json(video);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
+          field: err.errors[0].path.join("."),
         });
       }
       res.status(500).json({ message: "Internal Server Error" });
@@ -101,7 +106,7 @@ export async function registerRoutes(
     const stats = await storage.getStats();
     res.json({
       ...stats,
-      lastRun: stats.lastRun ? stats.lastRun.toISOString() : null
+      lastRun: stats.lastRun ? stats.lastRun.toISOString() : null,
     });
   });
 
